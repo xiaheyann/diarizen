@@ -1,0 +1,83 @@
+[project]
+name = "diarizen"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "migo",email = "1695587905@qq.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+"numpy==1.26.4",
+"typer>= 0.15.1",
+"pandas==2.2.3",
+"scipy==1.14.1",
+"soundfile>=0.12.1",
+"tqdm>=4.67.0",
+"yarl (>=1.19.0,<2.0.0)",
+"grpcio (>=1.74.0,<2.0.0)",
+"grpcio-tools (>=1.74.0,<2.0.0)",
+"usieg",
+"omegaconf (>=2.3.0,<3.0.0)",
+]
+
+
+[project.optional-dependencies]
+cpu = ["torch (==2.3.1+cpu)", "torchaudio (==2.3.1+cpu)",]
+cuda = ["torch (==2.3.1+cu121)", "torchaudio (==2.3.1+cu121)",]
+
+
+[tool.poetry]
+packages = [{include = "diarizen", from = "src"}]
+
+
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "migo-dl"
+url = "https://pypi.migow.club/migo/dl/+simple/"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "devpi-migo"
+url = "https://pypi.migow.club/devpi/dev/+simple"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+
+[[tool.poetry.dependencies.torch]]
+markers = "extra == 'cpu' and extra != 'cuda'"
+source = "pytorch-cpu"
+
+[[tool.poetry.dependencies.torch]]
+markers = "extra == 'cuda' and extra != 'cpu'"
+source = "pytorch-cu121"
+
+[[tool.poetry.dependencies.torchaudio]]
+markers = "extra == 'cpu' and extra != 'cuda'"
+source = "pytorch-cpu"
+
+[[tool.poetry.dependencies.torchaudio]]
+markers = "extra == 'cuda' and extra != 'cpu'"
+source = "pytorch-cu121"
+
+
+[[tool.poetry.dependencies.usieg]]
+source = "devpi-migo"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
