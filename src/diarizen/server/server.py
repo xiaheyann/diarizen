@@ -5,10 +5,9 @@ from concurrent import futures
 
 import grpc
 
+from diarizen.inferencer.grpc_inferencer import GrpcInferencer
 from diarizen.proto import ux_speaker_diarization_pb2 as pb2
 from diarizen.proto import ux_speaker_diarization_pb2_grpc as pb2_grpc
-from .grpc_inferencer import GrpcInferencer
-
 
 
 # ----------------------------- Servicer -----------------------------------
@@ -22,15 +21,15 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
         sample_rate = request.config.sample_rate_hertz
         encoding = request.config.encoding
         # 推理
-        results = self.inferencer.detect(audio, sample_rate, encoding, context)
+        results = self.inferencer.detect(audio, sample_rate, encoding)
         # results: list of dict, 每个dict包含start_time(float秒), end_time(float秒), speaker(int)
         # 构造pb2.DetectResponse
         pb_results = []
         for r in results or []:
             pb_result = pb2.DetectionResult(
-                start_time=self._to_duration(r.get('start_time', 0)),
-                end_time=self._to_duration(r.get('end_time', 0)),
-                speaker=r.get('speaker', 0),
+                start_time=self._to_duration(r.get("start_time", 0)),
+                end_time=self._to_duration(r.get("end_time", 0)),
+                speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
         return pb2.DetectResponse(results=pb_results)
@@ -43,9 +42,9 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
         pb_results = []
         for r in results or []:
             pb_result = pb2.DetectionResult(
-                start_time=self._to_duration(r.get('start_time', 0)),
-                end_time=self._to_duration(r.get('end_time', 0)),
-                speaker=r.get('speaker', 0),
+                start_time=self._to_duration(r.get("start_time", 0)),
+                end_time=self._to_duration(r.get("end_time", 0)),
+                speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
         return pb2.DetectResponse(results=pb_results)
@@ -54,6 +53,7 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
     def _to_duration(seconds: float):
         # 转为google.protobuf.duration_pb2.Duration
         from google.protobuf.duration_pb2 import Duration
+
         d = Duration()
         d.FromSeconds(seconds)
         return d

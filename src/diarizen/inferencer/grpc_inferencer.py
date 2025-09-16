@@ -28,6 +28,7 @@ class GrpcInferencer:
         context: 可选，grpc context
         return: list of dict, 每个dict包含start_time, end_time, speaker
         """
+        audio_np = np.frombuffer(audio, dtype=np.int16)
         pass
 
     def detect_wav(
