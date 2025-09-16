@@ -5,6 +5,7 @@ option java_package = "com.ux.sd";
 option java_outer_classname = "UxSdProto";
 option go_package = "ulang.com/sd;sd";
 package ux_sd;
+
 service UxSpeakerDiarization {
     rpc Detect(DetectRequest) returns (DetectResponse) {}
     rpc DetectWav(DetectWavRequest) returns (DetectResponse) {}
