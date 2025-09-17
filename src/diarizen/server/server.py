@@ -4,6 +4,7 @@ import logging
 from concurrent import futures
 
 import grpc
+from google.protobuf.duration_pb2 import Duration
 
 from diarizen.inferencer.grpc_inferencer import GrpcInferencer
 from diarizen.proto import ux_speaker_diarization_pb2 as pb2
@@ -32,6 +33,10 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
                 speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
+        print('DetectResponse:')
+        for r in pb_results:
+            print(f'speaker={r.speaker}, start={r.start_time.seconds + r.start_time.nanos/1e9:.2f}s, end={r.end_time.seconds + r.end_time.nanos/1e9:.2f}s')
+
         return pb2.DetectResponse(results=pb_results)
 
     def DetectWav(self, request: pb2.DetectWavRequest, context: grpc.ServicerContext) -> pb2.DetectResponse:  # type: ignore[override]
@@ -51,11 +56,10 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
 
     @staticmethod
     def _to_duration(seconds: float):
-        # 转为google.protobuf.duration_pb2.Duration
-        from google.protobuf.duration_pb2 import Duration
-
         d = Duration()
-        d.FromSeconds(seconds)
+        # 把秒和小数部分分开
+        d.seconds = int(seconds)  # 取整秒
+        d.nanos = int((seconds - d.seconds) * 1e9)  # 转换成纳秒
         return d
 
 
