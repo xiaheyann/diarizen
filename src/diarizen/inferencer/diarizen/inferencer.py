@@ -19,7 +19,7 @@ class Inferencer:
     def from_json(
         cls,
         diarizen_hub: Path,
-        device: Optional[torch.device] = torch.device("cuda"),
+        device: Optional[torch.device] = torch.device("cpu"),
     ):
         config = json.load((diarizen_hub / "config.json").open("r", encoding="utf-8"))
         inference_config = config["inference"]["args"]
