@@ -33,9 +33,11 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
                 speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
-        print('DetectResponse:')
+        print("DetectResponse:")
         for r in pb_results:
-            print(f'speaker={r.speaker}, start={r.start_time.seconds + r.start_time.nanos/1e9:.2f}s, end={r.end_time.seconds + r.end_time.nanos/1e9:.2f}s')
+            print(
+                f"speaker={r.speaker}, start={r.start_time.seconds + r.start_time.nanos/1e9:.2f}s, end={r.end_time.seconds + r.end_time.nanos/1e9:.2f}s"
+            )
 
         return pb2.DetectResponse(results=pb_results)
 
@@ -67,11 +69,15 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
 
 
 def serve(host: str, port: int, log_level: str) -> None:
+    options = [
+        ("grpc.max_receive_message_length", 100 * 1024 * 1024),
+        ("grpc.max_send_message_length", 100 * 1024 * 1024),
+    ]
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(message)s",
     )
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     pb2_grpc.add_UxSpeakerDiarizationServicer_to_server(
         UxSpeakerDiarizationServicer(), server
     )
