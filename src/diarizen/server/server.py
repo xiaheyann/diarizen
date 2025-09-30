@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import logging
-from concurrent import futures
-
 import grpc
 from google.protobuf.duration_pb2 import Duration
 
@@ -63,38 +60,3 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
         d.seconds = int(seconds)  # 取整秒
         d.nanos = int((seconds - d.seconds) * 1e9)  # 转换成纳秒
         return d
-
-
-# ------------------------------- Server -----------------------------------
-
-
-def serve(host: str, port: int, log_level: str) -> None:
-    options = [
-        ("grpc.max_receive_message_length", 100 * 1024 * 1024),
-        ("grpc.max_send_message_length", 100 * 1024 * 1024),
-    ]
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s %(message)s",
-    )
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
-    pb2_grpc.add_UxSpeakerDiarizationServicer_to_server(
-        UxSpeakerDiarizationServicer(), server
-    )
-    server.add_insecure_port(f"{host}:{port}")
-    logging.info("Starting UxSpeakerDiarization server on %s:%s", host, port)
-    server.start()
-    try:
-        server.wait_for_termination()
-    except KeyboardInterrupt:
-        logging.info("Shutting down...")
-        server.stop(grace=None)
-
-
-if __name__ == "__main__":
-    # -------------------- Hardcoded settings here --------------------
-    HOST = "0.0.0.0"
-    PORT = 50051
-    LOG_LEVEL = "INFO"
-    # ----------------------------------------------------------------
-    serve(HOST, PORT, LOG_LEVEL)
