@@ -1,13 +1,12 @@
 # ---> Python
 
-.git
 data-bin/
 outputs/
 wandb/
 tmp_workspace/
 tmp-workspace/
 .hydra
-
+nohup.out
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
