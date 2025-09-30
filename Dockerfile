@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # 安装依赖
-RUN poetry install
+RUN apt-get update && apt-get install -y libsndfile1 && rm -rf /var/lib/apt/lists/* && poetry install
 
 # 默认入口
 CMD ["python", "-m", "diarizen.commands.grpc_app"]
