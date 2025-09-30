@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from usieg.formatter import audition as aufmt
+import  diarizen.utils.audition_formatter as aufmt
 
 from diarizen.inferencer.diarizen.inferencer import Inferencer
 
