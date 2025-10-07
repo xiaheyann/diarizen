@@ -62,7 +62,6 @@ class GrpcInferencer:
             starts=df["start"].values, durations=df["duration"].values
         )
         audf["Name"] = df["name"].values
-        audf.to_csv("data-bin/debug.csv", index=False, sep="\t")
         results = []
         for _, row in df.iterrows():
             results.append(
