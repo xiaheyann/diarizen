@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 from pathlib import Path
 from typing import Callable, Optional, Text, Tuple, Union
@@ -12,6 +13,8 @@ from scipy.ndimage import median_filter
 from diarizen.inferencer.diarizen.powerset import Powerset
 from diarizen.models.diarizen.model import Model as EENDModel
 
+logger = logging.getLogger(__name__)
+
 
 class Inferencer:
 
@@ -19,7 +22,9 @@ class Inferencer:
     def from_json(
         cls,
         diarizen_hub: Path,
-        device: Optional[torch.device] = torch.device("cpu"),
+        device: Optional[torch.device] = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        ),
     ):
         config = json.load((diarizen_hub / "config.json").open("r", encoding="utf-8"))
         inference_config = config["inference"]["args"]
@@ -49,11 +54,13 @@ class Inferencer:
         skip_conversion: bool = False,
         device: Optional[torch.device] = None,
         batch_size: int = 32,
+        auto_clear_cache: bool = True,
     ):
         self.model = model
         self.model.eval()
         self.model.to(device)
         self.device = device
+        self.auto_clear_cache = auto_clear_cache
 
         self.window = window
 
@@ -76,12 +83,21 @@ class Inferencer:
         self.step = step
         self.batch_size = batch_size
 
+        logger.info(
+            f"Inferencer initialized on device: {self.device}, auto_clear_cache: {auto_clear_cache}"
+        )
+
     def model_forward(
         self, chunks: torch.Tensor, soft=False
     ) -> Union[np.ndarray, Tuple[np.ndarray]]:
         with torch.inference_mode():
-            outputs = self.model(chunks.to(self.device))
-        return self.conversion(outputs, soft=soft).cpu().numpy()
+            chunks_gpu = chunks.to(self.device)
+            outputs = self.model(chunks_gpu)
+            # 转换并立即移到CPU，释放GPU上的中间结果
+            result = self.conversion(outputs, soft=soft).cpu().numpy()
+            # 删除GPU上的张量引用
+            del chunks_gpu, outputs
+        return result
 
     def slide(
         self,
@@ -127,7 +143,27 @@ class Inferencer:
             waveform = torchaudio.functional.resample(
                 waveform, sr, self.model.sample_rate
             )
-        outputs = self.slide(waveform, soft=False)
-        # 中值滤波
-        outputs = median_filter(outputs, size=(1, 11, 1), mode="reflect")
+        
+        try:
+            outputs = self.slide(waveform, soft=False)
+            # 中值滤波
+            outputs = median_filter(outputs, size=(1, 11, 1), mode="reflect")
+        except torch.cuda.OutOfMemoryError as e:
+            logger.error(f"CUDA显存不足！推理过程中GPU显存已耗尽。错误详情: {e}")
+            # 尝试清理显存后重新抛出异常
+            self.clear_cache()
+            raise
+        except Exception as e:
+            logger.error(f"推理过程中发生错误: {e}", exc_info=True)
+            raise
+        finally:
+            # 清理GPU缓存，释放未使用的显存
+            self.clear_cache()
+        
         return outputs
+
+    def clear_cache(self):
+        """清理GPU缓存，释放未使用的显存"""
+        if self.device.type == "cuda":
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
