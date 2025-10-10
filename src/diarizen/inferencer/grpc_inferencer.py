@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 import torch
-from usieg.formatter import audition as aufmt
 
+from diarizen.utils import audition_formatter as aufmt
 from diarizen.inferencer.diarizen.inferencer import Inferencer
 
 DOWNSAMPLED_SR = 50
