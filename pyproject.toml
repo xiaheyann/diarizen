@@ -20,9 +20,10 @@ dependencies = [
 "omegaconf (>=2.3.0,<3.0.0)",
 "librosa (>=0.11.0,<0.12.0)",
 "mypy-protobuf (>=3.6.0,<4.0.0)",
-"torch==2.3.1",
-"torchaudio==2.3.1"
+"torch (==2.4.1)",
+"torchaudio (==2.4.1)",
 ]
+
 
 
 [tool.poetry]
@@ -53,6 +54,10 @@ priority = "explicit"
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
+
+
+[[tool.poetry.dependencies.usieg]]
+source = "devpi-migo"
 
 
 [build-system]
