@@ -41,7 +41,7 @@ def main():
     # 构造DetectRequest
     request = pb2.DetectRequest(config=config, audio=pcm_bytes)
     # gRPC请求
-    channel = grpc.insecure_channel("localhost:50051")
+    channel = grpc.insecure_channel("localhost:51003")
     stub = pb2_grpc.UxSpeakerDiarizationStub(channel)
     response = stub.Detect(request)
     print("DetectResponse:")
