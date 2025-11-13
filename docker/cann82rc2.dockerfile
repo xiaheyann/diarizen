@@ -27,6 +27,4 @@ EXPOSE 50051
 CMD ["/bin/bash", "-c", "\
     source /usr/local/Ascend/ascend-toolkit/set_env.sh && \
     export LD_LIBRARY_PATH=/usr/local/Ascend/driver/lib64/driver:${LD_LIBRARY_PATH} && \
-    poetry run python -m paraonline.commands.grpc_app \
-    ./model-bin/models/iic/speech_paraformer_asr_nat-zh-cn-16k-common-vocab8404-online \
-    "]
+    poetry run python -m diarizen.commands.grpc_app "]
