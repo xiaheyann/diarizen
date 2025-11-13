@@ -19,13 +19,7 @@ logger = logging.getLogger(__name__)
 class Inferencer:
 
     @classmethod
-    def from_json(
-        cls,
-        diarizen_hub: Path,
-        device: Optional[torch.device] = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        ),
-    ):
+    def from_json(cls, diarizen_hub: Path, device: str = "cpu"):
         config = json.load((diarizen_hub / "config.json").open("r", encoding="utf-8"))
         inference_config = config["inference"]["args"]
         model = EENDModel(**config["model"]["args"])
@@ -52,10 +46,12 @@ class Inferencer:
         pre_aggregation_hook: Callable[[np.ndarray], np.ndarray] = None,
         skip_aggregation: bool = False,
         skip_conversion: bool = False,
-        device: Optional[torch.device] = None,
+        device: str = "cpu",
         batch_size: int = 32,
         auto_clear_cache: bool = True,
     ):
+        device = torch.device(device)
+        
         self.model = model
         self.model.eval()
         self.model.to(device)
@@ -143,7 +139,7 @@ class Inferencer:
             waveform = torchaudio.functional.resample(
                 waveform, sr, self.model.sample_rate
             )
-        
+
         try:
             outputs = self.slide(waveform, soft=False)
             # 中值滤波
@@ -159,7 +155,7 @@ class Inferencer:
         finally:
             # 清理GPU缓存，释放未使用的显存
             self.clear_cache()
-        
+
         return outputs
 
     def clear_cache(self):
@@ -167,3 +163,6 @@ class Inferencer:
         if self.device.type == "cuda":
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
+        if self.device.type == "npu":
+            torch.npu.empty_cache()
+            torch.npu.synchronize()
