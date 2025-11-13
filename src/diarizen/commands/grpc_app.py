@@ -10,7 +10,7 @@ app = typer.Typer()
 @app.command()
 def serve(
     host: str = typer.Option("0.0.0.0", help="Server host"),
-    port: int = typer.Option(51003, help="Server port"),
+    port: int = typer.Option(50051, help="Server port"),
     log_level: str = typer.Option("INFO", help="Logging level"),
     max_workers: int = typer.Option(10, help="Maximum number of worker threads"),
     max_message_size: int = typer.Option(
