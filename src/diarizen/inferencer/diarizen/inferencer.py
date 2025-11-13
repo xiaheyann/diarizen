@@ -167,3 +167,6 @@ class Inferencer:
         if self.device.type == "cuda":
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
+        if self.device.type == "npu":
+            torch.npu.empty_cache()
+            torch.npu.synchronize()
