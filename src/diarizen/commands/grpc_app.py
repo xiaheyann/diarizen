@@ -10,11 +10,18 @@ app = typer.Typer()
 @app.command()
 def serve(
     host: str = typer.Option("0.0.0.0", help="Server host"),
-    port: int = typer.Option(50051, help="Server port"),
-    log_level: str = typer.Option("INFO", help="Logging level"),
-    max_workers: int = typer.Option(10, help="Maximum number of worker threads"),
+    port: int = typer.Option(50051, help="Server port", envvar="PORT"),
+    log_level: str = typer.Option("INFO", help="Logging level", envvar="LOG_LEVEL"),
+    max_workers: int = typer.Option(
+        10, help="Maximum number of worker threads", envvar="MAX_WORKERS"
+    ),
     max_message_size: int = typer.Option(
-        100 * 1024 * 1024, help="Maximum gRPC message size in bytes"
+        100 * 1024 * 1024,
+        help="Maximum gRPC message size in bytes",
+        envvar="MAX_MESSAGE_SIZE",
+    ),
+    device: str = typer.Option(
+        "cpu", help="Device to run inference on (e.g., 'cpu', 'cuda')", envvar="DEVICE"
     ),
 ) -> None:
 
@@ -34,7 +41,7 @@ def serve(
         futures.ThreadPoolExecutor(max_workers=max_workers), options=options
     )
     pb2_grpc.add_UxSpeakerDiarizationServicer_to_server(
-        UxSpeakerDiarizationServicer(), server
+        UxSpeakerDiarizationServicer(device=device), server
     )
     server.add_insecure_port(f"{host}:{port}")
     logging.info("Starting UxSpeakerDiarization server on %s:%s", host, port)

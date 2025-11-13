@@ -14,27 +14,26 @@ logger = logging.getLogger(__name__)
 
 # ----------------------------- Servicer -----------------------------------
 class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
-    def __init__(self):
+    def __init__(self, device: str = "cpu"):
         logger.info("Initializing UxSpeakerDiarizationServicer")
-        self.inferencer = GrpcInferencer()
+        self.inferencer = GrpcInferencer(device=device)
         logger.info("UxSpeakerDiarizationServicer initialized successfully")
 
     def Detect(self, request: pb2.DetectRequest, context: grpc.ServicerContext) -> pb2.DetectResponse:  # type: ignore[override]
-        logger.info("Received Detect request")
-        # 解析grpc request为python常用类型
         audio = request.audio
         sample_rate = request.config.sample_rate_hertz
         encoding = request.config.encoding
-        logger.info(f"Audio size: {len(audio)} bytes, sample_rate: {sample_rate}, encoding: {encoding}")
-        
+        duration = len(audio) / (sample_rate * 2)
+        logger.info(
+            f"Received audio of {duration}s, sr: {sample_rate}, encoding: {encoding}"
+        )
+
         # 推理
         try:
             results = self.inferencer.detect(audio, sample_rate, encoding)
-            logger.info(f"Detection completed, found {len(results) if results else 0} segments")
         except Exception as e:
             logger.error(f"Error during detection: {e}", exc_info=True)
             raise
-        
         # results: list of dict, 每个dict包含start_time(float秒), end_time(float秒), speaker(int)
         # 构造pb2.DetectResponse
         pb_results = []
@@ -53,15 +52,19 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
         path = request.path
         sample_rate = request.config.sample_rate_hertz
         encoding = request.config.encoding
-        logger.info(f"Received DetectWav request for path: {path}, sample_rate: {sample_rate}, encoding: {encoding}")
-        
+        logger.info(
+            f"Received DetectWav request for path: {path}, sample_rate: {sample_rate}, encoding: {encoding}"
+        )
+
         try:
             results = self.inferencer.detect_wav(path, sample_rate, encoding, context)
-            logger.info(f"DetectWav completed, found {len(results) if results else 0} segments")
+            logger.info(
+                f"DetectWav completed, found {len(results) if results else 0} segments"
+            )
         except Exception as e:
             logger.error(f"Error during DetectWav: {e}", exc_info=True)
             raise
-        
+
         pb_results = []
         for r in results or []:
             pb_result = pb2.DetectionResult(
@@ -70,7 +73,7 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
                 speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
-        
+
         logger.info(f"Returning DetectWav response with {len(pb_results)} results")
         return pb2.DetectResponse(results=pb_results)
 

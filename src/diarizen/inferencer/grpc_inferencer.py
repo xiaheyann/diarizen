@@ -29,14 +29,14 @@ except AttributeError:
 
 class GrpcInferencer:
 
-    def __init__(self, enable_memory_logging: bool = False):
-        logger.info("Initializing GrpcInferencer...")
-        self.inferencer = Inferencer.from_json(Path("model-bin/diarizen-wavlm-base"))
+    def __init__(self, device: str = "cpu"):
+        self.inferencer = Inferencer.from_json(
+            Path("model-bin/diarizen-wavlm-base"), device=device
+        )
         self.inferencer.step = 16
-        self.enable_memory_logging = enable_memory_logging
         self.request_count = 0
         logger.info(
-            f"GrpcInferencer initialized successfully (step={self.inferencer.step}, memory_logging={enable_memory_logging})"
+            f"GrpcInferencer initialized successfully (step={self.inferencer.step})"
         )
 
     def detect(self, audio: bytes, sr: int, encoding: int) -> List[Dict]:
