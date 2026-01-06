@@ -36,7 +36,7 @@ class GrpcInferencer:
         self.inferencer.step = 16
         self.request_count = 0
         logger.info(
-            f"GrpcInferencer initialized successfully (step={self.inferencer.step})"
+            f"GrpcInferencer initialized successfully on device: {device}, step: {self.inferencer.step}s)"
         )
 
     def detect(self, audio: bytes, sr: int, encoding: int) -> List[Dict]:

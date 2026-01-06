@@ -24,4 +24,4 @@ RUN poetry install
 EXPOSE 50051
 
 # 默认入口
-CMD ["poetry", "run", "python", "-m", "mossformer_dns.commands.app","--help"]
+CMD ["poetry", "run", "python", "-m", "diarizen.commands.grpc_app"]
