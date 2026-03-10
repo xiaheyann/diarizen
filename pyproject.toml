@@ -1,6 +1,6 @@
 [project]
 name = "diarizen"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = [
     {name = "migo",email = "1695587905@qq.com"}
@@ -17,21 +17,18 @@ dependencies = [
 "yarl (>=1.19.0,<2.0.0)",
 "grpcio (>=1.74.0,<2.0.0)",
 "grpcio-tools (>=1.74.0,<2.0.0)",
-"usieg",
 "omegaconf (>=2.3.0,<3.0.0)",
 "librosa (>=0.11.0,<0.12.0)",
 "mypy-protobuf (>=3.6.0,<4.0.0)",
 ]
 
 
-[project.optional-dependencies]
-cpu = ["torch (==2.3.1+cpu)", "torchaudio (==2.3.1+cpu)",]
-cuda = ["torch (==2.3.1+cu121)", "torchaudio (==2.3.1+cu121)",]
-
 
 [tool.poetry]
 packages = [{include = "diarizen", from = "src"}]
 
+[tool.poetry.scripts]
+diarizen = "diarizen.commands.grpc_app:main"
 
 [[tool.poetry.source]]
 name = "tuna"
@@ -57,23 +54,6 @@ priority = "explicit"
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
-
-
-[[tool.poetry.dependencies.torch]]
-markers = "extra == 'cpu' and extra != 'cuda'"
-source = "pytorch-cpu"
-
-[[tool.poetry.dependencies.torch]]
-markers = "extra == 'cuda' and extra != 'cpu'"
-source = "pytorch-cu121"
-
-[[tool.poetry.dependencies.torchaudio]]
-markers = "extra == 'cpu' and extra != 'cuda'"
-source = "pytorch-cpu"
-
-[[tool.poetry.dependencies.torchaudio]]
-markers = "extra == 'cuda' and extra != 'cpu'"
-source = "pytorch-cu121"
 
 
 [[tool.poetry.dependencies.usieg]]

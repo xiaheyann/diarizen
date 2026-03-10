@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from concurrent import futures
 
 import grpc
 from google.protobuf.duration_pb2 import Duration
@@ -10,19 +9,31 @@ from diarizen.inferencer.grpc_inferencer import GrpcInferencer
 from diarizen.proto import ux_speaker_diarization_pb2 as pb2
 from diarizen.proto import ux_speaker_diarization_pb2_grpc as pb2_grpc
 
+logger = logging.getLogger(__name__)
+
 
 # ----------------------------- Servicer -----------------------------------
 class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
-    def __init__(self):
-        self.inferencer = GrpcInferencer()
+    def __init__(self, device: str = "cpu"):
+        logger.info("Initializing UxSpeakerDiarizationServicer")
+        self.inferencer = GrpcInferencer(device=device)
+        logger.info("UxSpeakerDiarizationServicer initialized successfully")
 
     def Detect(self, request: pb2.DetectRequest, context: grpc.ServicerContext) -> pb2.DetectResponse:  # type: ignore[override]
-        # 解析grpc request为python常用类型
         audio = request.audio
         sample_rate = request.config.sample_rate_hertz
         encoding = request.config.encoding
+        duration = len(audio) / (sample_rate * 2)
+        logger.info(
+            f"Received audio of {duration}s, sr: {sample_rate}, encoding: {encoding}"
+        )
+
         # 推理
-        results = self.inferencer.detect(audio, sample_rate, encoding)
+        try:
+            results = self.inferencer.detect(audio, sample_rate, encoding)
+        except Exception as e:
+            logger.error(f"Error during detection: {e}", exc_info=True)
+            raise
         # results: list of dict, 每个dict包含start_time(float秒), end_time(float秒), speaker(int)
         # 构造pb2.DetectResponse
         pb_results = []
@@ -33,19 +44,27 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
                 speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
-        print("DetectResponse:")
-        for r in pb_results:
-            print(
-                f"speaker={r.speaker}, start={r.start_time.seconds + r.start_time.nanos/1e9:.2f}s, end={r.end_time.seconds + r.end_time.nanos/1e9:.2f}s"
-            )
 
+        logger.info(f"Returning response with {len(pb_results)} results")
         return pb2.DetectResponse(results=pb_results)
 
     def DetectWav(self, request: pb2.DetectWavRequest, context: grpc.ServicerContext) -> pb2.DetectResponse:  # type: ignore[override]
         path = request.path
         sample_rate = request.config.sample_rate_hertz
         encoding = request.config.encoding
-        results = self.inferencer.detect_wav(path, sample_rate, encoding, context)
+        logger.info(
+            f"Received DetectWav request for path: {path}, sample_rate: {sample_rate}, encoding: {encoding}"
+        )
+
+        try:
+            results = self.inferencer.detect_wav(path, sample_rate, encoding, context)
+            logger.info(
+                f"DetectWav completed, found {len(results) if results else 0} segments"
+            )
+        except Exception as e:
+            logger.error(f"Error during DetectWav: {e}", exc_info=True)
+            raise
+
         pb_results = []
         for r in results or []:
             pb_result = pb2.DetectionResult(
@@ -54,6 +73,8 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
                 speaker=r.get("speaker", 0),
             )
             pb_results.append(pb_result)
+
+        logger.info(f"Returning DetectWav response with {len(pb_results)} results")
         return pb2.DetectResponse(results=pb_results)
 
     @staticmethod
@@ -63,38 +84,3 @@ class UxSpeakerDiarizationServicer(pb2_grpc.UxSpeakerDiarizationServicer):
         d.seconds = int(seconds)  # 取整秒
         d.nanos = int((seconds - d.seconds) * 1e9)  # 转换成纳秒
         return d
-
-
-# ------------------------------- Server -----------------------------------
-
-
-def serve(host: str, port: int, log_level: str) -> None:
-    options = [
-        ("grpc.max_receive_message_length", 100 * 1024 * 1024),
-        ("grpc.max_send_message_length", 100 * 1024 * 1024),
-    ]
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s %(message)s",
-    )
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
-    pb2_grpc.add_UxSpeakerDiarizationServicer_to_server(
-        UxSpeakerDiarizationServicer(), server
-    )
-    server.add_insecure_port(f"{host}:{port}")
-    logging.info("Starting UxSpeakerDiarization server on %s:%s", host, port)
-    server.start()
-    try:
-        server.wait_for_termination()
-    except KeyboardInterrupt:
-        logging.info("Shutting down...")
-        server.stop(grace=None)
-
-
-if __name__ == "__main__":
-    # -------------------- Hardcoded settings here --------------------
-    HOST = "0.0.0.0"
-    PORT = 50051
-    LOG_LEVEL = "INFO"
-    # ----------------------------------------------------------------
-    serve(HOST, PORT, LOG_LEVEL)
